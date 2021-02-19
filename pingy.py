@@ -20,7 +20,7 @@ def main():
     elif option in nslookup:
         nslookupFunc()
     else:
-        print("Please type a valid option!")
+        print("Please type a valid option")
 
 def pingFunc():
     ip = input("Enter an IP address or Hostname to ping: ")

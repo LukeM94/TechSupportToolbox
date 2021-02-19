@@ -1,7 +1,7 @@
 import os
 import subprocess
 
-print("\033[1m" + "Welcome to the Tech Support Toolbox" + "\033[0m" + " \n Your options are: \n  (1) Ping, \n  (2) IPConfig, \n  (3) GetMac, \n  (4) NSLookup")
+print("\033[1m" + "Welcome to the Tech Support Toolbox" + "\033[0m" + " \n Your options are: \n  (1) Ping \n  (2) IPConfig \n  (3) GetMac \n  (4) NSLookup")
 
 def main():
     option = input("Type an option: ").lower()
@@ -32,7 +32,11 @@ def pingFunc():
     return pingOutput
 
 def ipconfigFunc():
-    os.system("ipconfig /all")
+    ipConfigOutput = os.system("ipconfig /all")
+    print (ipConfigOutput)
+    if ipConfigOutput == 1:
+        print("Something went wrong but it really shouldn't have....")
+    return ipConfigOutput
 
 def getmacFunc():
     os.system("getmac")

@@ -11,3 +11,8 @@ def test_pingFuncPass(monkeypatch):
     monkeypatch.setattr("builtins.input", lambda x: "8.8.8.8" )
     test = pingFunc()
     assert test == 0
+
+def test_ipconfigFunc():
+    from pingy import ipconfigFunc
+    test = ipconfigFunc()
+    assert test == 0

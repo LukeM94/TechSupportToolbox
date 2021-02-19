@@ -26,7 +26,7 @@ def pingFunc():
     ip = input("Enter an IP address or Hostname to ping: ")
     pingOutput = os.system("ping -n 3 " + ip)
     if pingOutput == 1:
-        print(ip + " isn't valid")
+        print(ip + " isn't a valid IP or Hostname")
     else:
         print("Ping COMMAND ran successfully. This doesn't mean I pinged anything though!")
     return pingOutput

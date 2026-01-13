@@ -1,0 +1,4 @@
+# No external dependencies required - uses Python standard library only
+# 
+# For development and testing:
+pytest>=7.0.0

@@ -54,16 +54,17 @@ def print_menu():
     print("   Welcome to the Tech Support Toolbox")
     print(f"{'='*50}{Colors.ENDC}\n")
     print("Your options are:")
-    print(f"  {Colors.OKBLUE}(1) Ping{Colors.ENDC}                - Test connectivity to a host")
-    print(f"  {Colors.OKBLUE}(2) Network Config{Colors.ENDC}     - Display network configuration")
-    print(f"  {Colors.OKBLUE}(3) MAC Address{Colors.ENDC}        - Show MAC addresses")
-    print(f"  {Colors.OKBLUE}(4) DNS Lookup{Colors.ENDC}         - Perform DNS lookup")
-    print(f"  {Colors.OKBLUE}(5) Traceroute{Colors.ENDC}         - Trace route to destination")
-    print(f"  {Colors.OKBLUE}(6) Port Scan{Colors.ENDC}          - Check if a port is open")
+    print(f"  {Colors.OKBLUE}(1) Ping              {Colors.ENDC} - Test connectivity to a host")
+    print(f"  {Colors.OKBLUE}(2) Network Config    {Colors.ENDC} - Display network configuration")
+    print(f"  {Colors.OKBLUE}(3) MAC Address       {Colors.ENDC} - Show MAC addresses")
+    print(f"  {Colors.OKBLUE}(4) DNS Lookup        {Colors.ENDC} - Perform DNS lookup")
+    print(f"  {Colors.OKBLUE}(5) Traceroute        {Colors.ENDC} - Trace route to destination")
+    print(f"  {Colors.OKBLUE}(6) Port Scan         {Colors.ENDC} - Check if a port is open")
     print(f"  {Colors.OKBLUE}(7) Network Interfaces{Colors.ENDC} - List network interfaces")
     print(f"  {Colors.OKBLUE}(q) Quit{Colors.ENDC}\n")
 
 def main():
+    """Run the interactive Tech Support Toolbox menu loop"""
     while True:
         print_menu()
         option = input(f"{Colors.OKCYAN}Type an option: {Colors.ENDC}").lower().strip()
@@ -176,7 +177,7 @@ def netconfigFunc():
                 result = subprocess.run(["ifconfig"], capture_output=True, text=True)
                 print(result.stdout)
                 return result.returncode
-            except:
+            except FileNotFoundError:
                 print(f"{Colors.FAIL}No network configuration command available{Colors.ENDC}")
                 return 1
     except Exception as e:
@@ -229,18 +230,21 @@ def nslookupFunc():
         cmd = ["nslookup", host]
         
         print(f"\n{Colors.OKBLUE}DNS Lookup for {host}:{Colors.ENDC}\n")
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+
         output = result.stdout + result.stderr
         print(output)
-        
+
         # Ask if user wants to save output
         save = input(f"{Colors.OKCYAN}Save output to file? (y/n): {Colors.ENDC}").lower()
         if save == 'y':
             save_output(output, "nslookup")
-        
+
         return result.returncode
-    
+
+    except subprocess.TimeoutExpired:
+        print(f"{Colors.FAIL}DNS lookup timed out{Colors.ENDC}")
+        return 1
     except Exception as e:
         print(f"{Colors.FAIL}Error: {e}{Colors.ENDC}")
         return 1
@@ -309,28 +313,26 @@ def portscanFunc():
     
     try:
         print(f"\n{Colors.OKBLUE}Scanning port {port} on {host}...{Colors.ENDC}\n")
-        
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(3)
-        
-        result = sock.connect_ex((host, port))
-        
+
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.settimeout(3)
+            result = sock.connect_ex((host, port))
+
         if result == 0:
             print(f"{Colors.OKGREEN}Port {port} is OPEN on {host}{Colors.ENDC}")
-            
+
             # Try to get service name
             try:
                 service = socket.getservbyport(port)
                 print(f"{Colors.OKCYAN}Common service: {service}{Colors.ENDC}")
-            except:
+            except OSError:
                 pass
-            
+
             return_code = 0
         else:
             print(f"{Colors.FAIL}Port {port} is CLOSED on {host}{Colors.ENDC}")
             return_code = 1
-        
-        sock.close()
+
         return return_code
     
     except socket.gaierror:
@@ -354,7 +356,7 @@ def interfacesFunc():
         try:
             local_ip = socket.gethostbyname(hostname)
             print(f"{Colors.OKGREEN}Local IP: {local_ip}{Colors.ENDC}\n")
-        except:
+        except socket.gaierror:
             print(f"{Colors.WARNING}Could not determine local IP{Colors.ENDC}\n")
         
         # Use platform-specific commands for detailed info

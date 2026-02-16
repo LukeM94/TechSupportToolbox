@@ -69,3 +69,97 @@ def test_nslookup(monkeypatch):
     test = nslookupFunc()
     # nslookup might return 0 or 1 depending on DNS server
     assert test in [0, 1]
+
+def test_getmacFunc(monkeypatch):
+    """Test MAC address function"""
+    from pingy import getmacFunc
+    monkeypatch.setattr("builtins.input", lambda x: "n")
+    result = getmacFunc()
+    assert result == 0
+
+def test_tracerouteFunc_invalid_input(monkeypatch):
+    """Test traceroute rejects invalid hostname"""
+    from pingy import tracerouteFunc
+    inputs = iter(["@@@invalid"])
+    monkeypatch.setattr("builtins.input", lambda x: next(inputs))
+    result = tracerouteFunc()
+    assert result == 1
+
+def test_tracerouteFunc_valid(monkeypatch):
+    """Test traceroute with valid hostname"""
+    import subprocess
+    from pingy import tracerouteFunc
+    fake_result = subprocess.CompletedProcess(args=[], returncode=0, stdout="traceroute output", stderr="")
+    inputs = iter(["8.8.8.8", "n"])
+    monkeypatch.setattr("builtins.input", lambda x: next(inputs))
+    monkeypatch.setattr("subprocess.run", lambda *args, **kwargs: fake_result)
+    result = tracerouteFunc()
+    assert result == 0
+
+def test_portscanFunc_invalid_host(monkeypatch):
+    """Test port scan rejects invalid hostname"""
+    from pingy import portscanFunc
+    inputs = iter(["@@@invalid"])
+    monkeypatch.setattr("builtins.input", lambda x: next(inputs))
+    result = portscanFunc()
+    assert result == 1
+
+def test_portscanFunc_invalid_port(monkeypatch):
+    """Test port scan rejects invalid port"""
+    from pingy import portscanFunc
+    inputs = iter(["8.8.8.8", "99999"])
+    monkeypatch.setattr("builtins.input", lambda x: next(inputs))
+    result = portscanFunc()
+    assert result == 1
+
+def test_portscanFunc_open_port(monkeypatch):
+    """Test port scan reports open port when connection succeeds"""
+    import socket
+    from pingy import portscanFunc
+
+    class FakeSocket:
+        def __init__(self, *args): pass
+        def settimeout(self, t): pass
+        def connect_ex(self, addr): return 0  # 0 = open
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+
+    inputs = iter(["8.8.8.8", "80"])
+    monkeypatch.setattr("builtins.input", lambda x: next(inputs))
+    monkeypatch.setattr("socket.socket", FakeSocket)
+    result = portscanFunc()
+    assert result == 0
+
+def test_portscanFunc_closed_port(monkeypatch):
+    """Test port scan reports closed port when connection is refused"""
+    import socket
+    from pingy import portscanFunc
+
+    class FakeSocket:
+        def __init__(self, *args): pass
+        def settimeout(self, t): pass
+        def connect_ex(self, addr): return 111  # non-zero = closed
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+
+    inputs = iter(["8.8.8.8", "9999"])
+    monkeypatch.setattr("builtins.input", lambda x: next(inputs))
+    monkeypatch.setattr("socket.socket", FakeSocket)
+    result = portscanFunc()
+    assert result == 1
+
+def test_interfacesFunc(monkeypatch):
+    """Test network interfaces function"""
+    from pingy import interfacesFunc
+    monkeypatch.setattr("builtins.input", lambda x: "n")
+    result = interfacesFunc()
+    assert result == 0
+
+def test_save_output(tmp_path, monkeypatch):
+    """Test save_output writes a file with correct content"""
+    from pingy import save_output
+    monkeypatch.chdir(tmp_path)
+    save_output("test output content", "testcmd")
+    files = list(tmp_path.glob("testcmd_*.txt"))
+    assert len(files) == 1
+    assert files[0].read_text() == "test output content"
